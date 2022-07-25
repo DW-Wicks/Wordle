@@ -20,9 +20,11 @@ import java.net.URL;
 import java.util.List;
 import java.util.LinkedList;
 
+import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
@@ -44,10 +46,44 @@ public class Wordle extends JFrame
     };
     public List<String> words, goodWords, tempWords;
     Container mainPane;
+    Box mainPanel;
+    Box buttonBox;
     JTable wordTable;
     JLabel wordCountLabel;
 
     enum State {GRAY, YELLOW, GREEN}
+    enum WordLength {
+        LETTERS5, LETTERS6;
+        
+        String getString() {
+            switch(this) {
+                case LETTERS5:
+                    return "5 letters";
+                case LETTERS6:
+                    return "6 letters";
+                default:
+                    return "";
+            }                
+        }
+        
+        static WordLength fromString(String s) {
+            for (WordLength wl : WordLength.values()) {
+                if (wl.getString().equals(s)) return wl;
+            }
+            return WordLength.LETTERS5;
+        }
+        
+        int getInt() {
+            switch(this) {
+                case LETTERS5:
+                    return 5;
+                case LETTERS6:
+                    return 6;
+                default:
+                    return 0;
+            }                
+        }
+    }
 
     public static void main(String[] args) {
         new Wordle();
@@ -55,10 +91,6 @@ public class Wordle extends JFrame
     
     Wordle() {
         super("Wordle Helper");
-        letters = new LetterField[nWords][];
-        for (int iWord=0; iWord<nWords; iWord++) {
-            letters[iWord] = new LetterField[wordLen];
-        }
         
         addWindowListener(new WindowAdapter()
         {
@@ -75,33 +107,46 @@ public class Wordle extends JFrame
         words = new LinkedList<String>();
         goodWords = new LinkedList<String>();
         tempWords = new LinkedList<String>();
-        loadWords();
-        for (String word : words) {
-            goodWords.add(word);
-        }
         buildMenu();
-        buildBody();
+        buildHeader();
         buildWordPane();
+        wordSizeInit();
         //setSize(500,500);
-        pack();
         setVisible(true);
+    }
+    
+    protected void wordSizeInit() {
+        loadWords();
+        letters = new LetterField[nWords][];
+        for (int iWord=0; iWord<nWords; iWord++) {
+            letters[iWord] = new LetterField[wordLen];
+        }
+        buildBody();
+        pack();
+        findWords();
+        fillWordTable();
     }
     
     protected void loadWords() {
         
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         String wordPath = String.format("words/word%02d.txt", wordLen);
-        System.out.println("Searching for wordPath: " + wordPath);
+        //System.out.println("Searching for wordPath: " + wordPath);
+        words.clear();
         
         try {
             URL url = classLoader.getResource(wordPath);
-            System.out.println("Got uri = " + url.toURI());
+            System.out.println("Reading words from: " + url.toURI());
             BufferedReader wordReader = new BufferedReader(
                     new FileReader(new File(url.toURI())));
             for (String line; (line=wordReader.readLine())!=null;) {
                 words.add(line);
             }
-            System.out.println(String.format("Read %d words",  words.size()));
+            for (String word : words) {
+                goodWords.add(word);
+            }
+
+            //System.out.println(String.format("Read %d words",  words.size()));
         } catch(Exception e) {
             System.out.println(e);
             System.exit(1);
@@ -127,8 +172,35 @@ public class Wordle extends JFrame
         setJMenuBar(menubar);
     }
     
+    protected void buildHeader() {
+        JComboBox<String> lengthSelector = new JComboBox<String> (
+                new String[] {
+                        WordLength.LETTERS5.getString(),
+                        WordLength.LETTERS6.getString()
+                });
+        lengthSelector.setBorder(BorderFactory.createTitledBorder("Select word length"));
+        lengthSelector.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e)
+            {
+                String s = lengthSelector.getSelectedItem().toString();
+                wordLen = WordLength.fromString(s).getInt();
+                wordSizeInit();
+            }
+        });
+        Box headerBox = Box.createHorizontalBox();
+        headerBox.add(Box.createHorizontalGlue());
+        headerBox.add(lengthSelector);
+        headerBox.add(Box.createHorizontalGlue());
+        mainPane.add(headerBox, BorderLayout.NORTH);
+    }
+    
     protected void buildBody() {
-        Box mainPanel = Box.createVerticalBox();
+        if (mainPanel != null) {
+            mainPane.remove(mainPanel);
+            mainPane.remove(buttonBox);
+        }
+        mainPanel = Box.createVerticalBox();
         
         mainPanel.add(Box.createVerticalStrut(20));
         for (int i=0; i<nWords; i++) {
@@ -140,7 +212,7 @@ public class Wordle extends JFrame
         
         mainPane.add(mainPanel, BorderLayout.CENTER);
         
-        Box buttonBox = new Box(BoxLayout.X_AXIS) {
+        buttonBox = new Box(BoxLayout.X_AXIS) {
             private static final long serialVersionUID = 1L;
 
             @Override
@@ -312,8 +384,10 @@ public class Wordle extends JFrame
     boolean okYellow(String word) {
         // Tests a word from the goodWords list.
         // Returns:
-        //    true:  if the word contains a yellow letter anywhere in the word.
-        //    false: if the word is missing any yellow letters.
+        //    true:  if the word contains a yellow letter anywhere in the word
+        //           except for the character at the yellow position itself.
+        //    false: if the word is missing any yellow letters or only contains
+        //           the character at the yellow position.
 
         // Loop over user input words
         for (int iWord=0; iWord<nWords; iWord++) {
@@ -323,15 +397,21 @@ public class Wordle extends JFrame
                 if (c1 == ' ') return true; // Got into dead space of user input
                 if (letters[iWord][iChar].state == State.YELLOW) {
                     // This is a yellow letter.
-                    // The input word must contain this letter somewhere.
+                    // The input word must contain this letter somewhere other
+                    // than at the current position.
                     boolean found=false;
                     
                     // Loop over letters in test word
                     for (int ic=0; ic<wordLen; ic++) {
                         char c2 = word.charAt(ic);
                         if (c1 == c2) {
-                            found=true;
-                            break;  // Found yellow letter in word.  Keep looking for other yellow letters.
+                            if (ic != iChar &&
+                                letters[iWord][ic].state != State.GREEN) {
+                                // The character we are looking for can't
+                                // be in the current position or be green.
+                                found=true;
+                                break;
+                            }
                         }
                     }
                     if (!found) return false; // Did not find yellow letter in word
