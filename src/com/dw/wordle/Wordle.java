@@ -28,6 +28,7 @@ import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
@@ -44,6 +45,7 @@ public class Wordle extends JFrame
     public List<String> words, goodWords, tempWords;
     Container mainPane;
     JTable wordTable;
+    JLabel wordCountLabel;
 
     enum State {GRAY, YELLOW, GREEN}
 
@@ -173,7 +175,8 @@ public class Wordle extends JFrame
     }
     
     void buildWordPane() {
-        int nRows = 20;
+        JPanel wordPane = new JPanel(new BorderLayout());
+        int nRows = 100;
         int nCols = 5;
         String[]   tableHdrs = {"-----", "-----", "-----", "-----","-----"};
         String[][] tableWords = new String[nRows][];
@@ -193,11 +196,27 @@ public class Wordle extends JFrame
                 return new Insets(20, 20, 20, 20);
             }
         };
-        mainPane.add(scrollPane, BorderLayout.EAST);
+        wordTable.getTableHeader().setUI(null);
+        wordCountLabel = new JLabel("Number of words");
+        setWordCount();
+        wordPane.add(wordCountLabel, BorderLayout.NORTH);
+        wordPane.add(scrollPane, BorderLayout.CENTER);
+        mainPane.add(wordPane, BorderLayout.EAST);
+    }
+    
+    void setWordCount() {
+        wordCountLabel.setText("Number of words: " + this.goodWords.size());
     }
     
     void findWords() {
         System.out.println("Finding words...");
+
+        // Reset goodWords
+        goodWords.clear();
+        for (String word : words) {
+            goodWords.add(word);
+        }
+
         filterGreen();
         filterYellow();
         filterGray();
@@ -206,7 +225,7 @@ public class Wordle extends JFrame
     
     void fillWordTable() {
         int nRows = wordTable.getRowCount();
-        int nCols = wordTable.getColumnCount();
+        int nCols = wordTable.getColumnCount();        
         int nWords = goodWords.size();
 
         // Clear table
@@ -224,20 +243,22 @@ public class Wordle extends JFrame
                 wordTable.setValueAt(goodWords.get(iWord), iRow, iCol);
             }
         }
-        
+        setWordCount();
     }
     
     void filterGreen() {
-        
-        System.out.println("filterGreen: Searching goodWords " + goodWords.size());
+        // Eliminates words from goodWords that are missing green letters.
+                
+        // Check words in goodWords.
+        // Save words that pass the green test to tempWords. 
         tempWords.clear();
         for (String word : goodWords) {
-            //System.out.println("filterGreen: Checking word: " + word);
             if (okGreen(word)) {
-                //System.out.println("filterGreen: ok");
                 tempWords.add(word);
             }
         }
+
+        // Update goodWords with values from tempWords.
         goodWords.clear();
         for (String word : tempWords) {
             goodWords.add(word);
@@ -246,28 +267,41 @@ public class Wordle extends JFrame
     }
 
     boolean okGreen(String word) {
+        // Tests a word from the goodWords list.
+        // Returns:
+        //    true:   if the word contains all the necessary green letters.
+        //    false:  if the word is missing any green letters.
+        
+        // Loop over user input words
         for (int iWord=0; iWord<nWords; iWord++) {
+            // Loop over characters in this user input word
             for (int iChar=0; iChar<wordLen; iChar++) {
+                char c1 = letters[iWord][iChar].getChar();
+                if (c1 == ' ') return true; // Got into dead space of user input
                 if (letters[iWord][iChar].state == State.GREEN) {
-                    char c1 = word.charAt(iChar);
-                    char c2 = Character.toLowerCase(letters[iWord][iChar].getChar());
+                    // This is a green letter.
+                    // The input word must contain this letter in this position.
+                    char c2 = word.charAt(iChar);
                     if (c1 != c2) return false;
                 }
             }
         }
-        return true;
+        return true;  // Everything passed.
     }
 
     void filterYellow() {
-        System.out.println("filterGreen: Searching goodWords " + goodWords.size());
+        // Eliminates words from goodWords that are missing yellow letters.
+
+        // Check words in goodWords.
+        // Save words that pass the yellow test to tempWords. 
         tempWords.clear();
         for (String word : goodWords) {
-            System.out.println("filterYellow: Checking word: " + word);
             if (okYellow(word)) {
-                System.out.println("filterYellow: ok");
                 tempWords.add(word);
             }
         }
+
+        // Update goodWords with values from tempWords.
         goodWords.clear();
         for (String word : tempWords) {
             goodWords.add(word);
@@ -276,13 +310,25 @@ public class Wordle extends JFrame
     }
 
     boolean okYellow(String word) {
+        // Tests a word from the goodWords list.
+        // Returns:
+        //    true:  if the word contains a yellow letter anywhere in the word.
+        //    false: if the word is missing any yellow letters.
+
+        // Loop over user input words
         for (int iWord=0; iWord<nWords; iWord++) {
+            // Loop over characters in this user input word
             for (int iChar=0; iChar<wordLen; iChar++) {
+                char c1 = letters[iWord][iChar].getChar();
+                if (c1 == ' ') return true; // Got into dead space of user input
                 if (letters[iWord][iChar].state == State.YELLOW) {
+                    // This is a yellow letter.
+                    // The input word must contain this letter somewhere.
                     boolean found=false;
-                    char c2 = Character.toLowerCase(letters[iWord][iChar].getChar());
+                    
+                    // Loop over letters in test word
                     for (int ic=0; ic<wordLen; ic++) {
-                        char c1 = word.charAt(ic);
+                        char c2 = word.charAt(ic);
                         if (c1 == c2) {
                             found=true;
                             break;  // Found yellow letter in word.  Keep looking for other yellow letters.
@@ -292,47 +338,80 @@ public class Wordle extends JFrame
                 }
             }
         }
-        return true;
+        return true; // Everything passed
     }
 
     void filterGray() {
-        System.out.println("filterGray: Searching goodWords " + goodWords.size());
+        // Eliminates words from goodWords that contain gray letters
+        // unless the letter is also present as green or yellow 
+
+        // Check words in goodWords.
+        // Save words that pass the yellow test to tempWords. 
         tempWords.clear();
         for (String word : goodWords) {
-            System.out.println("filterGray: Checking word: " + word);
             if (okGray(word)) {
-                System.out.println("filterGray: ok");
                 tempWords.add(word);
             }
         }
+
+        // Update goodWords with values from tempWords.
         goodWords.clear();
         for (String word : tempWords) {
             goodWords.add(word);
         }
+
         System.out.println("filterGray: goodWords = " + goodWords.size());        
     }
         
     boolean okGray(String word) {
+        // Tests a word from the goodWords list.
+        // Returns:
+        //    true:  if the word contains no lone gray letters
+        //        or if the word contains a gray letter but also has a matching green or yellow letter   
+        //    false: if the word contains any lone gray letters
+        
+        // Loop over user input words
         for (int iWord=0; iWord<nWords; iWord++) {
+            boolean greenYellow=false;
+            char c1, c2;
+
+            // Loop over characters in this user input word
             for (int iChar=0; iChar<wordLen; iChar++) {
+                c1 = letters[iWord][iChar].getChar();
+                if (c1 == ' ') return true; // Got into dead space of user input
                 if (letters[iWord][iChar].state == State.GRAY) {
-                    boolean green=false;
-                    boolean found=false;
-                    char c2 = Character.toLowerCase(letters[iWord][iChar].getChar());
+                    // This is a gray letter.
+                    // The input word must not contain this letter unless
+                    // the letter is also present as a green or yellow letter.
+                    
+                    // Check for this letter also there as green or yellow
                     for (int ic=0; ic<wordLen; ic++) {
-                        char c1 = word.charAt(ic);
-                        if (c1 == c2) {
-                            found = true;
-                            if (letters[iWord][ic].state==State.GREEN) green=true;
-                            if (letters[iWord][ic].state==State.YELLOW) green=true;
-                            break;  // Found yellow letter in word.  Keep looking for other yellow letters.
+                        c2 = letters[iWord][ic].getChar();
+                        if ((c2 == c1)
+                                && (
+                                        letters[iWord][ic].state==State.GREEN ||
+                                        letters[iWord][ic].state==State.YELLOW
+                                    )
+                                 ) {
+                            greenYellow = true;
+                            break;
                         }
                     }
-                    if (found && !green) return false; // Reject if found unless a green was found.
-                }
-            }
-        }
-        return true;
+                    
+                    if (!greenYellow) {
+                        // Loop over letters in test word
+                        for (int ic=0; ic<wordLen; ic++) {
+                            c2 = word.charAt(ic);
+                            if (c1 == c2) {
+                                // This letter should not be in the word
+                                return false;
+                            }
+                        }
+                    }
+                } // State=GRAY
+            } // Loop over letters in user input word
+        } // Loop over user nput words
+        return true;  // Everything passed
     }
 
     
@@ -344,8 +423,9 @@ public class Wordle extends JFrame
         }
         for (LetterField[] word : letters) {
             for (LetterField lf : word) {
-                lf.setText("");
-                lf.setBackground(Color.WHITE);
+                lf.setText(" ");
+                lf.setBackground(Color.LIGHT_GRAY);
+                lf.state = State.GRAY;
             }
         }
         fillWordTable();
@@ -465,7 +545,9 @@ public class Wordle extends JFrame
         
         char getChar() {
             String value = getText();
-            return (value.length()>0) ? getText().charAt(0) : ' ';
+            return (value.length()>0) 
+                ? Character.toLowerCase(value.charAt(0))
+                : ' ';
         }
 
         void setColor() {
