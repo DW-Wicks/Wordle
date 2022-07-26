@@ -523,7 +523,7 @@ public class Wordle extends JFrame
             add(new JLabel(String.format("%d ===>", iWord+1)));
             add(Box.createHorizontalStrut(10));
             for (int iChar = 0; iChar<wordLen; iChar++) {
-                letters[iWord][iChar] = new LetterField(" ");
+                letters[iWord][iChar] = new LetterField(iWord, iChar, " ");
                 add(letters[iWord][iChar]);
                 add(Box.createHorizontalStrut(10));
             }
@@ -534,12 +534,16 @@ public class Wordle extends JFrame
     class LetterField extends JTextField {
         private static final long serialVersionUID = 1L;
         public State state=State.GRAY;
-        public int iWord;
-        public char c;
+        int iWord;
         int iChar;
+        char c;
+        int wordIndex;
+        int charIndex;
 
-        public LetterField(String s) {
+        public LetterField(int iw, int ic, String s) {
             super(s, 2);
+            wordIndex = iw;
+            charIndex = ic;
             c = s.charAt(0);
             
             state=State.GRAY;
@@ -551,8 +555,57 @@ public class Wordle extends JFrame
                 @Override
                 public void keyTyped(KeyEvent evt) {
                     // Replace existing text with new key.  Base class handles new.
+                    //boolean tabToNext = true;
+                    char curVal = getChar();
+                    char keyVal = evt.getKeyChar();
+                    
+                    // Ignore anything non-alphabetic except space or slash.
+                    if (!"abcdefghigjklmnopqrstuvwxyz /".contains(String.valueOf(keyVal))) {
+                        keyVal = curVal;
+                        evt.setKeyChar(keyVal);  // Ignore key
+                        //tabToNext = false;
+                    }
+                    
+                    // Slash key: cycle through states
+                    if (keyVal == '/') {
+                        if (curVal != ' ') {
+                            switch(state) {
+                                case GRAY:
+                                    state=State.YELLOW;
+                                    break;
+                                case YELLOW:
+                                    state=State.GREEN;
+                                    break;
+                                case GREEN:
+                                    state=State.GRAY;
+                                    break;
+                            }
+                        }
+                        keyVal = curVal;
+                        evt.setKeyChar(keyVal);  // Replace / with curVal
+                        //tabToNext = false;
+                    }
+
+                    if (keyVal != curVal){
+                        // New letter.  Reset state to GRAY.
+                        state=State.GRAY;
+                    }
+                    setColor();
+
                     evt.setKeyChar(Character.toUpperCase(evt.getKeyChar()));
                     setText("");
+
+//                    Commented out because auto-advance interferes with "/" state entry
+//                    System.out.println("tabToNext = " + tabToNext);
+//                    if (tabToNext) {
+//                        int nextChar = (charIndex + 1) % wordLen;
+//                        int nextWord = wordIndex;
+//                        if (nextChar == 0) {
+//                            nextWord = (nextWord + 1) % nWords;
+//                        }
+//                        System.out.println("nextWord="+nextWord+", nextChar="+nextChar);
+//                        letters[nextWord][nextChar].grabFocus();
+//                    }
                 }
 
                 @Override
