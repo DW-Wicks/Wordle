@@ -478,7 +478,17 @@ public class Wordle extends JFrame
                         }
                     }
                     
-                    if (!greenYellow) {
+                    if (greenYellow) {
+                        // Loop over letters in test word
+                        for (int ic=0; ic<wordLen; ic++) {
+                            c2 = word.charAt(ic);
+                            if ((c1 == c2) && (ic == iChar)) {
+                                // We already know this letter is gray
+                                return false;
+                            }
+                        }
+                        
+                    } else {
                         // Loop over letters in test word
                         for (int ic=0; ic<wordLen; ic++) {
                             c2 = word.charAt(ic);
