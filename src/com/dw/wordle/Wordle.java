@@ -34,6 +34,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.border.Border;
 
 public class Wordle extends JFrame
 {
@@ -239,7 +240,7 @@ public class Wordle extends JFrame
         buttonBox.add(Box.createHorizontalGlue());
         buttonBox.add(Box.createHorizontalStrut(20));
         buttonBox.add(findButton);
-        buttonBox.add(Box.createHorizontalStrut(20));
+        buttonBox.add(Box.createHorizontalStrut(40));
         buttonBox.add(clearButton);
         buttonBox.add(Box.createHorizontalStrut(20));
         buttonBox.add(Box.createHorizontalGlue());
@@ -247,7 +248,16 @@ public class Wordle extends JFrame
     }
     
     void buildWordPane() {
-        JPanel wordPane = new JPanel(new BorderLayout());
+        JPanel wordPane = new JPanel(new BorderLayout()) {
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            public Insets getInsets()
+            {
+                return new Insets(3, 3, 3, 20);
+            }
+        };
+            
         int nRows = 100;
         int nCols = 5;
         String[]   tableHdrs = {"-----", "-----", "-----", "-----","-----"};
@@ -265,9 +275,12 @@ public class Wordle extends JFrame
             @Override
             public Insets getInsets()
             {
-                return new Insets(20, 20, 20, 20);
+                return new Insets(6, 6, 6, 6);
             }
         };
+        Border raisedbevel = BorderFactory.createRaisedBevelBorder();
+        Border loweredbevel = BorderFactory.createLoweredBevelBorder();
+        scrollPane.setBorder(BorderFactory.createCompoundBorder(raisedbevel, loweredbevel));
         wordTable.getTableHeader().setUI(null);
         wordCountLabel = new JLabel("Number of words");
         setWordCount();
@@ -575,6 +588,9 @@ public class Wordle extends JFrame
                         evt.setKeyChar(keyVal);  // Ignore key
                         //tabToNext = false;
                     }
+                    
+                    // Space key.  Reset state to gray.
+                    if (keyVal == ' ') state = State.GRAY;
                     
                     // Slash key: cycle through states
                     if (keyVal == '/') {
