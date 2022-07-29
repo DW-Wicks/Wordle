@@ -418,12 +418,15 @@ public class Wordle extends JFrame
                     for (int ic=0; ic<wordLen; ic++) {
                         char c2 = word.charAt(ic);
                         if (c1 == c2) {
-                            if (ic != iChar &&
-                                letters[iWord][ic].state != State.GREEN) {
-                                // The character we are looking for can't
-                                // be in the current position or be green.
-                                found=true;
-                                break;
+                            if (ic == iChar) {
+                                break;  // Stop searching.  This letter is yellow so this word is invalid.
+                            } else {
+                                if (letters[iWord][ic].state != State.GREEN) {
+                                    // The character we are looking for can't
+                                    // be in the current position or be green.
+                                    found=true;
+                                    break;
+                                }
                             }
                         }
                     }
