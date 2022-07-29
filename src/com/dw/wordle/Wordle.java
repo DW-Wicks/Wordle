@@ -413,30 +413,30 @@ public class Wordle extends JFrame
             // Loop over characters in this user input word
             for (int iChar=0; iChar<wordLen; iChar++) {
                 char c1 = letters[iWord][iChar].getChar();
+                char c2 = word.charAt(iChar);
                 if (c1 == ' ') return true; // Got into dead space of user input
-                if (letters[iWord][iChar].state == State.YELLOW) {
-                    // This is a yellow letter.
-                    // The input word must contain this letter somewhere other
-                    // than at the current position.
-                    boolean found=false;
-                    
-                    // Loop over letters in test word
-                    for (int ic=0; ic<wordLen; ic++) {
-                        char c2 = word.charAt(ic);
-                        if (c1 == c2) {
-                            if (ic == iChar) {
-                                break;  // Stop searching.  This letter is yellow so this word is invalid.
-                            } else {
-                                if (letters[iWord][ic].state != State.GREEN) {
-                                    // The character we are looking for can't
-                                    // be in the current position or be green.
-                                    found=true;
-                                    break;
-                                }
-                            }
-                        }
+
+                if (letters[iWord][iChar].state != State.YELLOW) continue;
+                // This is a yellow letter.
+                // The input word must contain this letter somewhere else
+
+                for (int iw=0; iw<nWords; iw++) {
+                    char c11 = letters[iw][iChar].getChar();
+                    if (c11 == ' ') break;
+                    if (c11 == c2 && letters[iw][iChar].state == State.YELLOW) {
+                        // This letter at this position is yellow in one of the words.  Reject.
+                        //System.out.println(String.format(
+                        //        "OKYellow:RejectYellowA: word=%s, iWord=%d, iChar=%d, iw=%d, c1=%c, c11=%c",
+                        //        word, iWord, iChar, iw, c1, c11));
+                        return false;
                     }
-                    if (!found) return false; // Did not find yellow letter in word
+                    if (letters[iw][iChar].state == State.GREEN && c11 != c2) {
+                        // Another letter is known to be at this position.  Reject.
+                        //System.out.println(String.format(
+                        //        "OKYellow:RejectGreenA: word=%s, iWord=%d, iChar=%d, iw=%d, c1=%c, c11=%c",
+                        //        word, iWord, iChar, iw, c1, c11));
+                        return false;
+                    }                    
                 }
             }
         }
@@ -475,52 +475,57 @@ public class Wordle extends JFrame
         // Loop over user input words
         for (int iWord=0; iWord<nWords; iWord++) {
             boolean greenYellow=false;
-            char c1, c2;
+            char c1, c11, c2;
 
             // Loop over characters in this user input word
             for (int iChar=0; iChar<wordLen; iChar++) {
                 c1 = letters[iWord][iChar].getChar();
                 if (c1 == ' ') return true; // Got into dead space of user input
-                if (letters[iWord][iChar].state == State.GRAY) {
-                    // This is a gray letter.
-                    // The input word must not contain this letter unless
-                    // the letter is also present as a green or yellow letter.
+                if (letters[iWord][iChar].state != State.GRAY) continue;
+                // This is a gray letter.
+                // The input word must not contain this letter unless
+                // the letter is also present as a green or yellow letter.
                     
-                    // Check for this letter also there as green or yellow
+                // Check for this letter also there as green or yellow
+                for (int ic=0; ic<wordLen; ic++) {
+                    c11 = letters[iWord][ic].getChar();
+                    if ((c11 == c1)
+                            && (
+                                    letters[iWord][ic].state==State.GREEN ||
+                                    letters[iWord][ic].state==State.YELLOW
+                                )
+                             ) {
+                        greenYellow = true;
+                        break;
+                    }
+                }
+                    
+                if (greenYellow) {
+                    // Loop over letters in test word
                     for (int ic=0; ic<wordLen; ic++) {
-                        c2 = letters[iWord][ic].getChar();
-                        if ((c2 == c1)
-                                && (
-                                        letters[iWord][ic].state==State.GREEN ||
-                                        letters[iWord][ic].state==State.YELLOW
-                                    )
-                                 ) {
-                            greenYellow = true;
-                            break;
+                        c2 = word.charAt(ic);
+                        if ((c1 == c2) && (ic == iChar)) {
+                            // We already know this letter is gray
+                            //System.out.println(String.format(
+                            //        "OKGray:RejectA: word=%s, iWord=%d, iChar=%d, ic=%d, c1=%c, c2=%c",
+                            //        word, iWord, iChar, ic, c1, c2));
+                            return false;
                         }
                     }
-                    
-                    if (greenYellow) {
-                        // Loop over letters in test word
-                        for (int ic=0; ic<wordLen; ic++) {
-                            c2 = word.charAt(ic);
-                            if ((c1 == c2) && (ic == iChar)) {
-                                // We already know this letter is gray
-                                return false;
-                            }
-                        }
                         
-                    } else {
-                        // Loop over letters in test word
-                        for (int ic=0; ic<wordLen; ic++) {
-                            c2 = word.charAt(ic);
-                            if (c1 == c2) {
-                                // This letter should not be in the word
-                                return false;
-                            }
+                } else {
+                    // Loop over letters in test word
+                    for (int ic=0; ic<wordLen; ic++) {
+                        c2 = word.charAt(ic);
+                        if (c1 == c2) {
+                            // This letter should not be in the word
+                            //System.out.println(String.format(
+                            //        "OKGray:RejectB: word=%s, iWord=%d, iChar=%d, c1=%c, c2=%c",
+                            //        word, iWord, iChar, c1, c2));
+                            return false;
                         }
                     }
-                } // State=GRAY
+                }
             } // Loop over letters in user input word
         } // Loop over user nput words
         return true;  // Everything passed
