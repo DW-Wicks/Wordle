@@ -268,7 +268,13 @@ public class Wordle extends JFrame
                 tableWords[iRow][iCol] = "";
             }
         }
-        wordTable = new JTable(tableWords, tableHdrs );
+        wordTable = new JTable(tableWords, tableHdrs ) {
+            private static final long serialVersionUID = 1L;
+            @Override
+            public boolean isCellEditable(int r, int c) {
+                return false;
+            }
+        };
         JScrollPane scrollPane = new JScrollPane(wordTable) {
             private static final long serialVersionUID = 1L;
 
