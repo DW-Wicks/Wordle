@@ -409,11 +409,12 @@ public class Wordle extends JFrame
         //           the character at the yellow position.
 
         // Loop over user input words
+        char c1, c11, c2, c22;
         for (int iWord=0; iWord<nWords; iWord++) {
             // Loop over characters in this user input word
             for (int iChar=0; iChar<wordLen; iChar++) {
-                char c1 = letters[iWord][iChar].getChar();
-                char c2 = word.charAt(iChar);
+                c1 = letters[iWord][iChar].getChar();
+                c2 = word.charAt(iChar);
                 if (c1 == ' ') return true; // Got into dead space of user input
 
                 if (letters[iWord][iChar].state != State.YELLOW) continue;
@@ -421,7 +422,7 @@ public class Wordle extends JFrame
                 // The input word must contain this letter somewhere else
 
                 for (int iw=0; iw<nWords; iw++) {
-                    char c11 = letters[iw][iChar].getChar();
+                    c11 = letters[iw][iChar].getChar();
                     if (c11 == ' ') break;
                     if (c11 == c2 && letters[iw][iChar].state == State.YELLOW) {
                         // This letter at this position is yellow in one of the words.  Reject.
@@ -432,12 +433,25 @@ public class Wordle extends JFrame
                     }
                     if (letters[iw][iChar].state == State.GREEN && c11 != c2) {
                         // Another letter is known to be at this position.  Reject.
-                        //System.out.println(String.format(
-                        //        "OKYellow:RejectGreenA: word=%s, iWord=%d, iChar=%d, iw=%d, c1=%c, c11=%c",
-                        //        word, iWord, iChar, iw, c1, c11));
+                        if (word.equals("lunch")) {
+                            System.out.println(String.format(
+                                    "OKYellow:RejectGreenA: word=%s, iWord=%d, iChar=%d, iw=%d, c1=%c, c11=%c",
+                                    word, iWord, iChar, iw, c1, c11));
+                            
+                        }
                         return false;
-                    }                    
+                    }
+
                 }
+                
+                // Make sure that this yellow letter is somewhere else in the word
+                boolean found = false;
+                for (int ic=0; ic<wordLen; ic++) {
+                    if (ic == iChar) continue;  // Don't count character being examined
+                    c22 = word.charAt(ic);
+                    if (c1 == c22) found=true;
+                }
+                if (!found) return false;
             }
         }
         return true; // Everything passed
