@@ -462,7 +462,7 @@ public class Wordle extends JFrame
         // unless the letter is also present as green or yellow 
 
         // Check words in goodWords.
-        // Save words that pass the yellow test to tempWords. 
+        // Save words that pass the gray test to tempWords. 
         tempWords.clear();
         for (String word : goodWords) {
             if (okGray(word)) {
@@ -488,11 +488,12 @@ public class Wordle extends JFrame
         
         // Loop over user input words
         for (int iWord=0; iWord<nWords; iWord++) {
-            boolean greenYellow=false;
+            boolean greenYellow;
             char c1, c11, c2;
 
             // Loop over characters in this user input word
             for (int iChar=0; iChar<wordLen; iChar++) {
+                greenYellow = false;
                 c1 = letters[iWord][iChar].getChar();
                 if (c1 == ' ') return true; // Got into dead space of user input
                 if (letters[iWord][iChar].state != State.GRAY) continue;
