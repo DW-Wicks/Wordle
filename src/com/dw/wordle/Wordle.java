@@ -611,6 +611,11 @@ public class Wordle extends JFrame
                     char curVal = getChar();
                     char keyVal = evt.getKeyChar();
                     
+                    if (keyVal == '\n') {
+                        findWords();
+                        return;
+                    }                    
+                    
                     // Ignore anything non-alphabetic except space or slash.
                     if (!"abcdefghigjklmnopqrstuvwxyz /".contains(String.valueOf(keyVal))) {
                         keyVal = curVal;
@@ -621,8 +626,8 @@ public class Wordle extends JFrame
                     // Space key.  Reset state to gray.
                     if (keyVal == ' ') state = State.GRAY;
                     
-                    // Slash key: cycle through states
-                    if (keyVal == '/') {
+                    // Slash key or repeated key: cycle through states
+                    if (keyVal == '/' || keyVal==curVal) {
                         if (curVal != ' ') {
                             switch(state) {
                                 case GRAY:

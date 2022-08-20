@@ -790,6 +790,7 @@ bloat
 blobs
 block
 blocs
+blogs
 bloke
 blond
 blood
@@ -4309,6 +4310,7 @@ loges
 loggy
 logia
 logic
+login
 logoi
 logos
 loins
