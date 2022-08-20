@@ -13,10 +13,9 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.File;
 import java.io.BufferedReader;
-import java.io.FileReader;
-import java.net.URL;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.List;
 import java.util.LinkedList;
 
@@ -127,19 +126,16 @@ public class Wordle extends JFrame
         findWords();
         fillWordTable();
     }
-    
+
     protected void loadWords() {
-        
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        String wordPath = String.format("words/word%02d.txt", wordLen);
-        //System.out.println("Searching for wordPath: " + wordPath);
+        // This version of loadWords finds the word file based on CLASSPATH.
+        // If a jar file is used, it will read the word file from that jar file.
+        String wordPath = String.format("/WORDS/WORD%02d.TXT", wordLen);
+        InputStream input = getClass().getResourceAsStream(wordPath);
+        BufferedReader wordReader = new BufferedReader(new InputStreamReader(input));
         words.clear();
-        
+
         try {
-            URL url = classLoader.getResource(wordPath);
-            System.out.println("Reading words from: " + url.toURI());
-            BufferedReader wordReader = new BufferedReader(
-                    new FileReader(new File(url.toURI())));
             for (String line; (line=wordReader.readLine())!=null;) {
                 words.add(line);
             }
@@ -152,8 +148,9 @@ public class Wordle extends JFrame
             System.out.println(e);
             System.exit(1);
         }
+
     }
-    
+        
     protected void buildMenu() {
         JMenuBar menubar = new JMenuBar();
         JMenu file = new JMenu("File");
