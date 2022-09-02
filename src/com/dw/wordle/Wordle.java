@@ -14,6 +14,7 @@ import java.awt.event.MouseListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.List;
@@ -135,18 +136,42 @@ public class Wordle extends JFrame
         BufferedReader wordReader = new BufferedReader(new InputStreamReader(input));
         words.clear();
 
-        try {
-            for (String line; (line=wordReader.readLine())!=null;) {
-                words.add(line);
+        // Sometimes when opening the word file we get an IOException saying
+        // "Device not ready.".  This can happen if a USB drive takes too
+        // long to wake up.  This loop waits a little bit and retries maxTries
+        // times before finally giving up.
+        int iTry = 0;
+        int maxTries = 10;
+        while (true) {
+            try
+            {
+                iTry++;
+                for (String line; (line=wordReader.readLine())!=null;) {
+                    words.add(line);
+                }
+                for (String word : words) {
+                    goodWords.add(word);
+                }
+                //System.out.println(String.format("Read %d words",  words.size()));
+                return;
             }
-            for (String word : words) {
-                goodWords.add(word);
+            catch (IOException e) {
+                if (iTry>=maxTries) {
+                    // Exceeded retry loop limit.  Abort.
+                    e.printStackTrace();
+                    System.exit(1);
+                } else {
+                    // Sleep 200 milliseconds before continuing retry loop
+                    try
+                    {
+                        Thread.sleep(200);
+                    }
+                    catch (InterruptedException e1)
+                    {
+                    }
+                }
             }
-
-            //System.out.println(String.format("Read %d words",  words.size()));
-        } catch(Exception e) {
-            System.out.println(e);
-            System.exit(1);
+            // Continue retry loop.
         }
 
     }
