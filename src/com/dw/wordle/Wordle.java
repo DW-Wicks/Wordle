@@ -141,7 +141,7 @@ public class Wordle extends JFrame
         // long to wake up.  This loop waits a little bit and retries maxTries
         // times before finally giving up.
         int iTry = 0;
-        int maxTries = 10;
+        int maxTries = 20;
         while (true) {
             try
             {
@@ -164,7 +164,7 @@ public class Wordle extends JFrame
                     // Sleep 200 milliseconds before continuing retry loop
                     try
                     {
-                        Thread.sleep(200);
+                        Thread.sleep(500);
                     }
                     catch (InterruptedException e1)
                     {

@@ -9709,6 +9709,7 @@ quave
 quawk
 quays
 qubba
+qubit
 queak
 queal
 quean
