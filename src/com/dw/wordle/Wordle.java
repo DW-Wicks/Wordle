@@ -14,7 +14,6 @@ import java.awt.event.MouseListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.List;
@@ -38,20 +37,19 @@ import javax.swing.border.Border;
 
 public class Wordle extends JFrame
 {
+    // Class variables
     private static final long serialVersionUID = 1L;
-    public int nWords = 6;
-    public int wordLen = 5;
-    public LetterField[][] letters;
-    public String[] anyPatternStr = {
-        "",  ".", "..", "...", "....", ".....", "......"
-    };
-    public List<String> words, goodWords, tempWords;
-    Container mainPane;
-    Box mainPanel;
-    Box buttonBox;
-    JTable wordTable;
-    JLabel wordCountLabel;
-
+    final int       _nWords  = 6;
+    int             _wordLen = 5;
+    LetterField[][] _letters;
+    List<String>    _words5, _words6, _words, _goodWords, _tempWords;
+    Container       _mainPane;
+    Box             _mainPanel;
+    Box             _buttonBox;
+    JTable          _wordTable;
+    JLabel          _wordCountLabel;
+    
+    // Class enums
     enum State {GRAY, YELLOW, GREEN}
     enum WordLength {
         LETTERS5, LETTERS6;
@@ -92,7 +90,7 @@ public class Wordle extends JFrame
     
     Wordle() {
         super("Wordle Helper");
-        
+
         addWindowListener(new WindowAdapter()
         {
             @Override
@@ -102,12 +100,15 @@ public class Wordle extends JFrame
             }
         });
 
-        mainPane = getContentPane();
-        mainPane.setLayout(new BorderLayout());
+        _mainPane = getContentPane();
+        _mainPane.setLayout(new BorderLayout());
         
-        words = new LinkedList<String>();
-        goodWords = new LinkedList<String>();
-        tempWords = new LinkedList<String>();
+        _words5 = loadWords(5);
+        _words6 = loadWords(6);
+        if (_wordLen == 5) _words = _words5;
+        else _words=_words6;
+        _goodWords = new LinkedList<String>();
+        _tempWords = new LinkedList<String>();
         buildMenu();
         buildHeader();
         buildWordPane();
@@ -117,54 +118,63 @@ public class Wordle extends JFrame
     }
     
     protected void wordSizeInit() {
-        loadWords();
-        letters = new LetterField[nWords][];
-        for (int iWord=0; iWord<nWords; iWord++) {
-            letters[iWord] = new LetterField[wordLen];
+        if (_wordLen == 5) {
+            System.out.println("Switching to _words5");
+            _words = _words5;
+        } else {
+            System.out.println("Switching to _words6");
+            _words = _words6;
+        }
+        for (String word : _words) {
+            _goodWords.add(word);
+        }
+        
+        _letters = new LetterField[_nWords][];
+        for (int iWord=0; iWord<_nWords; iWord++) {
+            _letters[iWord] = new LetterField[_wordLen];
         }
         buildBody();
         pack();
         findWords();
         fillWordTable();
     }
-
-    protected void loadWords() {
+    
+    protected List<String> loadWords(int wordLen) {
         // This version of loadWords finds the word file based on CLASSPATH.
         // If a jar file is used, it will read the word file from that jar file.
-        String wordPath = String.format("/WORDS/WORD%02d.TXT", wordLen);
-        InputStream input = getClass().getResourceAsStream(wordPath);
-        BufferedReader wordReader = new BufferedReader(new InputStreamReader(input));
-        words.clear();
 
         // Sometimes when opening the word file we get an IOException saying
         // "Device not ready.".  This can happen if a USB drive takes too
         // long to wake up.  This loop waits a little bit and retries maxTries
         // times before finally giving up.
+        System.out.println("Reading " + wordLen + " letter words");
+        List<String> words = new LinkedList<String>();
         int iTry = 0;
-        int maxTries = 20;
+        int maxTries = 30;
         while (true) {
+            String wordPath = String.format("/WORDS/WORD%02d.TXT", wordLen);
+            InputStream input = getClass().getResourceAsStream(wordPath);
+            BufferedReader wordReader = new BufferedReader(new InputStreamReader(input));
+
             try
             {
                 iTry++;
                 for (String line; (line=wordReader.readLine())!=null;) {
                     words.add(line);
                 }
-                for (String word : words) {
-                    goodWords.add(word);
-                }
                 //System.out.println(String.format("Read %d words",  words.size()));
-                return;
+                return words;
             }
-            catch (IOException e) {
+            catch (Exception e) {
                 if (iTry>=maxTries) {
                     // Exceeded retry loop limit.  Abort.
                     e.printStackTrace();
                     System.exit(1);
                 } else {
-                    // Sleep 200 milliseconds before continuing retry loop
+                    // Sleep 1000 milliseconds before continuing retry loop
                     try
                     {
-                        Thread.sleep(500);
+                        Thread.sleep(1000);
                     }
                     catch (InterruptedException e1)
                     {
@@ -173,7 +183,6 @@ public class Wordle extends JFrame
             }
             // Continue retry loop.
         }
-
     }
         
     protected void buildMenu() {
@@ -207,7 +216,7 @@ public class Wordle extends JFrame
             public void actionPerformed(ActionEvent e)
             {
                 String s = lengthSelector.getSelectedItem().toString();
-                wordLen = WordLength.fromString(s).getInt();
+                _wordLen = WordLength.fromString(s).getInt();
                 wordSizeInit();
             }
         });
@@ -215,27 +224,27 @@ public class Wordle extends JFrame
         headerBox.add(Box.createHorizontalGlue());
         headerBox.add(lengthSelector);
         headerBox.add(Box.createHorizontalGlue());
-        mainPane.add(headerBox, BorderLayout.NORTH);
+        _mainPane.add(headerBox, BorderLayout.NORTH);
     }
     
     protected void buildBody() {
-        if (mainPanel != null) {
-            mainPane.remove(mainPanel);
-            mainPane.remove(buttonBox);
+        if (_mainPanel != null) {
+            _mainPane.remove(_mainPanel);
+            _mainPane.remove(_buttonBox);
         }
-        mainPanel = Box.createVerticalBox();
+        _mainPanel = Box.createVerticalBox();
         
-        mainPanel.add(Box.createVerticalStrut(20));
-        for (int i=0; i<nWords; i++) {
-            WordBox word= new WordBox(i, wordLen);
-            mainPanel.add(word);
-            mainPanel.add(Box.createVerticalStrut(10));
+        _mainPanel.add(Box.createVerticalStrut(20));
+        for (int i=0; i<_nWords; i++) {
+            WordBox word= new WordBox(i, _wordLen);
+            _mainPanel.add(word);
+            _mainPanel.add(Box.createVerticalStrut(10));
         }
-        mainPanel.add(Box.createVerticalStrut(20));
+        _mainPanel.add(Box.createVerticalStrut(20));
         
-        mainPane.add(mainPanel, BorderLayout.CENTER);
+        _mainPane.add(_mainPanel, BorderLayout.CENTER);
         
-        buttonBox = new Box(BoxLayout.X_AXIS) {
+        _buttonBox = new Box(BoxLayout.X_AXIS) {
             private static final long serialVersionUID = 1L;
 
             @Override
@@ -259,14 +268,14 @@ public class Wordle extends JFrame
                clearWords();
             }
         });
-        buttonBox.add(Box.createHorizontalGlue());
-        buttonBox.add(Box.createHorizontalStrut(20));
-        buttonBox.add(findButton);
-        buttonBox.add(Box.createHorizontalStrut(40));
-        buttonBox.add(clearButton);
-        buttonBox.add(Box.createHorizontalStrut(20));
-        buttonBox.add(Box.createHorizontalGlue());
-        mainPane.add(buttonBox, BorderLayout.SOUTH);
+        _buttonBox.add(Box.createHorizontalGlue());
+        _buttonBox.add(Box.createHorizontalStrut(20));
+        _buttonBox.add(findButton);
+        _buttonBox.add(Box.createHorizontalStrut(40));
+        _buttonBox.add(clearButton);
+        _buttonBox.add(Box.createHorizontalStrut(20));
+        _buttonBox.add(Box.createHorizontalGlue());
+        _mainPane.add(_buttonBox, BorderLayout.SOUTH);
     }
     
     void buildWordPane() {
@@ -290,14 +299,14 @@ public class Wordle extends JFrame
                 tableWords[iRow][iCol] = "";
             }
         }
-        wordTable = new JTable(tableWords, tableHdrs ) {
+        _wordTable = new JTable(tableWords, tableHdrs ) {
             private static final long serialVersionUID = 1L;
             @Override
             public boolean isCellEditable(int r, int c) {
                 return false;
             }
         };
-        JScrollPane scrollPane = new JScrollPane(wordTable) {
+        JScrollPane scrollPane = new JScrollPane(_wordTable) {
             private static final long serialVersionUID = 1L;
 
             @Override
@@ -309,25 +318,25 @@ public class Wordle extends JFrame
         Border raisedbevel = BorderFactory.createRaisedBevelBorder();
         Border loweredbevel = BorderFactory.createLoweredBevelBorder();
         scrollPane.setBorder(BorderFactory.createCompoundBorder(raisedbevel, loweredbevel));
-        wordTable.getTableHeader().setUI(null);
-        wordCountLabel = new JLabel("Number of words");
+        _wordTable.getTableHeader().setUI(null);
+        _wordCountLabel = new JLabel("Number of words");
         setWordCount();
-        wordPane.add(wordCountLabel, BorderLayout.NORTH);
+        wordPane.add(_wordCountLabel, BorderLayout.NORTH);
         wordPane.add(scrollPane, BorderLayout.CENTER);
-        mainPane.add(wordPane, BorderLayout.EAST);
+        _mainPane.add(wordPane, BorderLayout.EAST);
     }
     
     void setWordCount() {
-        wordCountLabel.setText("Number of words: " + this.goodWords.size());
+        _wordCountLabel.setText("Number of words: " + this._goodWords.size());
     }
     
     void findWords() {
         System.out.println("Finding words...");
 
         // Reset goodWords
-        goodWords.clear();
-        for (String word : words) {
-            goodWords.add(word);
+        _goodWords.clear();
+        for (String word : _words) {
+            _goodWords.add(word);
         }
 
         filterGreen();
@@ -337,14 +346,14 @@ public class Wordle extends JFrame
     }
     
     void fillWordTable() {
-        int nRows = wordTable.getRowCount();
-        int nCols = wordTable.getColumnCount();        
-        int nWords = goodWords.size();
+        int nRows = _wordTable.getRowCount();
+        int nCols = _wordTable.getColumnCount();        
+        int nWords = _goodWords.size();
 
         // Clear table
         for (int iRow=0; iRow<nRows; iRow++ ) {
             for (int iCol=0; iCol<nCols; iCol++) {
-                wordTable.setValueAt("", iRow, iCol);
+                _wordTable.setValueAt("", iRow, iCol);
             }
         }
         
@@ -353,7 +362,7 @@ public class Wordle extends JFrame
             for (int iWord=0; iWord<nWords; iWord++) {
                 int iRow = iWord/nCols;
                 int iCol = iWord%nCols;
-                wordTable.setValueAt(goodWords.get(iWord), iRow, iCol);
+                _wordTable.setValueAt(_goodWords.get(iWord), iRow, iCol);
             }
         }
         setWordCount();
@@ -364,19 +373,19 @@ public class Wordle extends JFrame
                 
         // Check words in goodWords.
         // Save words that pass the green test to tempWords. 
-        tempWords.clear();
-        for (String word : goodWords) {
+        _tempWords.clear();
+        for (String word : _goodWords) {
             if (okGreen(word)) {
-                tempWords.add(word);
+                _tempWords.add(word);
             }
         }
 
         // Update goodWords with values from tempWords.
-        goodWords.clear();
-        for (String word : tempWords) {
-            goodWords.add(word);
+        _goodWords.clear();
+        for (String word : _tempWords) {
+            _goodWords.add(word);
         }
-        System.out.println("filterGreen: goodWords = " + goodWords.size());
+        System.out.println("filterGreen: goodWords = " + _goodWords.size());
     }
 
     boolean okGreen(String word) {
@@ -386,12 +395,12 @@ public class Wordle extends JFrame
         //    false:  if the word is missing any green letters.
         
         // Loop over user input words
-        for (int iWord=0; iWord<nWords; iWord++) {
+        for (int iWord=0; iWord<_nWords; iWord++) {
             // Loop over characters in this user input word
-            for (int iChar=0; iChar<wordLen; iChar++) {
-                char c1 = letters[iWord][iChar].getChar();
+            for (int iChar=0; iChar<_wordLen; iChar++) {
+                char c1 = _letters[iWord][iChar].getChar();
                 if (c1 == ' ') return true; // Got into dead space of user input
-                if (letters[iWord][iChar].state == State.GREEN) {
+                if (_letters[iWord][iChar].state == State.GREEN) {
                     // This is a green letter.
                     // The input word must contain this letter in this position.
                     char c2 = word.charAt(iChar);
@@ -407,19 +416,19 @@ public class Wordle extends JFrame
 
         // Check words in goodWords.
         // Save words that pass the yellow test to tempWords. 
-        tempWords.clear();
-        for (String word : goodWords) {
+        _tempWords.clear();
+        for (String word : _goodWords) {
             if (okYellow(word)) {
-                tempWords.add(word);
+                _tempWords.add(word);
             }
         }
 
         // Update goodWords with values from tempWords.
-        goodWords.clear();
-        for (String word : tempWords) {
-            goodWords.add(word);
+        _goodWords.clear();
+        for (String word : _tempWords) {
+            _goodWords.add(word);
         }
-        System.out.println("filterYellow: goodWords = " + goodWords.size());        
+        System.out.println("filterYellow: goodWords = " + _goodWords.size());        
     }
 
     boolean okYellow(String word) {
@@ -432,28 +441,28 @@ public class Wordle extends JFrame
 
         // Loop over user input words
         char c1, c11, c2, c22;
-        for (int iWord=0; iWord<nWords; iWord++) {
+        for (int iWord=0; iWord<_nWords; iWord++) {
             // Loop over characters in this user input word
-            for (int iChar=0; iChar<wordLen; iChar++) {
-                c1 = letters[iWord][iChar].getChar();
+            for (int iChar=0; iChar<_wordLen; iChar++) {
+                c1 = _letters[iWord][iChar].getChar();
                 c2 = word.charAt(iChar);
                 if (c1 == ' ') return true; // Got into dead space of user input
 
-                if (letters[iWord][iChar].state != State.YELLOW) continue;
+                if (_letters[iWord][iChar].state != State.YELLOW) continue;
                 // This is a yellow letter.
                 // The input word must contain this letter somewhere else
 
-                for (int iw=0; iw<nWords; iw++) {
-                    c11 = letters[iw][iChar].getChar();
+                for (int iw=0; iw<_nWords; iw++) {
+                    c11 = _letters[iw][iChar].getChar();
                     if (c11 == ' ') break;
-                    if (c11 == c2 && letters[iw][iChar].state == State.YELLOW) {
+                    if (c11 == c2 && _letters[iw][iChar].state == State.YELLOW) {
                         // This letter at this position is yellow in one of the words.  Reject.
                         //System.out.println(String.format(
                         //        "OKYellow:RejectYellowA: word=%s, iWord=%d, iChar=%d, iw=%d, c1=%c, c11=%c",
                         //        word, iWord, iChar, iw, c1, c11));
                         return false;
                     }
-                    if (letters[iw][iChar].state == State.GREEN && c11 != c2) {
+                    if (_letters[iw][iChar].state == State.GREEN && c11 != c2) {
                         // Another letter is known to be at this position.  Reject.
                         if (word.equals("lunch")) {
                             System.out.println(String.format(
@@ -468,7 +477,7 @@ public class Wordle extends JFrame
                 
                 // Make sure that this yellow letter is somewhere else in the word
                 boolean found = false;
-                for (int ic=0; ic<wordLen; ic++) {
+                for (int ic=0; ic<_wordLen; ic++) {
                     if (ic == iChar) continue;  // Don't count character being examined
                     c22 = word.charAt(ic);
                     if (c1 == c22) found=true;
@@ -485,20 +494,20 @@ public class Wordle extends JFrame
 
         // Check words in goodWords.
         // Save words that pass the gray test to tempWords. 
-        tempWords.clear();
-        for (String word : goodWords) {
+        _tempWords.clear();
+        for (String word : _goodWords) {
             if (okGray(word)) {
-                tempWords.add(word);
+                _tempWords.add(word);
             }
         }
 
         // Update goodWords with values from tempWords.
-        goodWords.clear();
-        for (String word : tempWords) {
-            goodWords.add(word);
+        _goodWords.clear();
+        for (String word : _tempWords) {
+            _goodWords.add(word);
         }
 
-        System.out.println("filterGray: goodWords = " + goodWords.size());        
+        System.out.println("filterGray: goodWords = " + _goodWords.size());        
     }
         
     boolean okGray(String word) {
@@ -509,27 +518,27 @@ public class Wordle extends JFrame
         //    false: if the word contains any lone gray letters
         
         // Loop over user input words
-        for (int iWord=0; iWord<nWords; iWord++) {
+        for (int iWord=0; iWord<_nWords; iWord++) {
             boolean greenYellow;
             char c1, c11, c2;
 
             // Loop over characters in this user input word
-            for (int iChar=0; iChar<wordLen; iChar++) {
+            for (int iChar=0; iChar<_wordLen; iChar++) {
                 greenYellow = false;
-                c1 = letters[iWord][iChar].getChar();
+                c1 = _letters[iWord][iChar].getChar();
                 if (c1 == ' ') return true; // Got into dead space of user input
-                if (letters[iWord][iChar].state != State.GRAY) continue;
+                if (_letters[iWord][iChar].state != State.GRAY) continue;
                 // This is a gray letter.
                 // The input word must not contain this letter unless
                 // the letter is also present as a green or yellow letter.
                     
                 // Check for this letter also there as green or yellow
-                for (int ic=0; ic<wordLen; ic++) {
-                    c11 = letters[iWord][ic].getChar();
+                for (int ic=0; ic<_wordLen; ic++) {
+                    c11 = _letters[iWord][ic].getChar();
                     if ((c11 == c1)
                             && (
-                                    letters[iWord][ic].state==State.GREEN ||
-                                    letters[iWord][ic].state==State.YELLOW
+                                    _letters[iWord][ic].state==State.GREEN ||
+                                    _letters[iWord][ic].state==State.YELLOW
                                 )
                              ) {
                         greenYellow = true;
@@ -539,7 +548,7 @@ public class Wordle extends JFrame
                     
                 if (greenYellow) {
                     // Loop over letters in test word
-                    for (int ic=0; ic<wordLen; ic++) {
+                    for (int ic=0; ic<_wordLen; ic++) {
                         c2 = word.charAt(ic);
                         if ((c1 == c2) && (ic == iChar)) {
                             // We already know this letter is gray
@@ -552,7 +561,7 @@ public class Wordle extends JFrame
                         
                 } else {
                     // Loop over letters in test word
-                    for (int ic=0; ic<wordLen; ic++) {
+                    for (int ic=0; ic<_wordLen; ic++) {
                         c2 = word.charAt(ic);
                         if (c1 == c2) {
                             // This letter should not be in the word
@@ -571,11 +580,11 @@ public class Wordle extends JFrame
     
     void clearWords() {
         System.out.println("Clearing...");
-        goodWords.clear();
-        for (String word : words) {
-            goodWords.add(word);
+        _goodWords.clear();
+        for (String word : _words) {
+            _goodWords.add(word);
         }
-        for (LetterField[] word : letters) {
+        for (LetterField[] word : _letters) {
             for (LetterField lf : word) {
                 lf.setText(" ");
                 lf.setBackground(Color.LIGHT_GRAY);
@@ -597,8 +606,8 @@ public class Wordle extends JFrame
             add(new JLabel(String.format("%d ===>", iWord+1)));
             add(Box.createHorizontalStrut(10));
             for (int iChar = 0; iChar<wordLen; iChar++) {
-                letters[iWord][iChar] = new LetterField(iWord, iChar, " ");
-                add(letters[iWord][iChar]);
+                _letters[iWord][iChar] = new LetterField(iWord, iChar, " ");
+                add(_letters[iWord][iChar]);
                 add(Box.createHorizontalStrut(10));
             }
             add(Box.createHorizontalStrut(20));
