@@ -592,7 +592,7 @@ public class Wordle extends JFrame
             }
         }
         fillWordTable();
-        
+        _letters[0][0].grabFocus();
     }
     
     class WordBox extends Box {
@@ -643,9 +643,16 @@ public class Wordle extends JFrame
                     char keyVal = evt.getKeyChar();
                     
                     if (keyVal == '\n') {
+                        // Enter key pressed.  Update matching words.
                         findWords();
                         return;
-                    }                    
+                    }
+                    
+                    if (keyVal == KeyEvent.VK_ESCAPE) {
+                        // Escape key pressed.  Clear words and reset focus.
+                        clearWords();
+                        return;
+                    }
                     
                     // Ignore anything non-alphabetic except space or slash.
                     if (!"abcdefghigjklmnopqrstuvwxyz /".contains(String.valueOf(keyVal))) {
