@@ -2721,6 +2721,7 @@ cooth
 coots
 cooty
 copal
+copay
 coped
 copei
 copen
@@ -3650,6 +3651,7 @@ dript
 drisk
 drive
 drogh
+droid
 droil
 droit
 droll
@@ -3670,6 +3672,7 @@ drown
 droyl
 drubs
 drugs
+droid
 druid
 drums
 drung
@@ -3874,6 +3877,7 @@ elans
 elate
 elayl
 elbow
+elden
 elder
 elect
 elegy
@@ -10503,6 +10507,7 @@ sangu
 sanit
 sanka
 sansi
+santa
 santo
 santy
 sapan
@@ -11766,6 +11771,7 @@ stems
 stend
 steng
 steno
+stent
 steps
 stept
 stere
