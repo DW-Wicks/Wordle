@@ -44,6 +44,7 @@ public class Wordle extends JFrame
     final int       _nWords  = 6;
     int             _wordLen = 5;
     LetterField[][] _letters;
+    JComboBox<String> _lengthSelector;
     List<String>    _words5, _words6, _words, _goodWords, _tempWords;
     Container       _mainPane;
     Box             _mainPanel;
@@ -74,7 +75,7 @@ public class Wordle extends JFrame
             return WordLength.LETTERS5;
         }
         
-        int getInt() {
+        int getValue() {
             switch(this) {
                 case LETTERS5:
                     return 5;
@@ -210,25 +211,24 @@ public class Wordle extends JFrame
     }
     
     protected void buildHeader() {
-        JComboBox<String> lengthSelector = new JComboBox<String> (
+        _lengthSelector = new JComboBox<String> (
                 new String[] {
                         WordLength.LETTERS5.getString(),
                         WordLength.LETTERS6.getString()
                 });
-        lengthSelector.setBorder(BorderFactory.createTitledBorder("Select word length"));
-        lengthSelector.addActionListener(new ActionListener() {
+        _lengthSelector.setBorder(BorderFactory.createTitledBorder("Select word length"));
+        _lengthSelector.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e)
             {
-                String s = lengthSelector.getSelectedItem().toString();
-                _wordLen = WordLength.fromString(s).getInt();
+                String s = _lengthSelector.getSelectedItem().toString();
+                _wordLen = WordLength.fromString(s).getValue();
                 wordSizeInit();
-                _letters[0][0].grabFocus();
             }
         });
         Box headerBox = Box.createHorizontalBox();
         headerBox.add(Box.createHorizontalGlue());
-        headerBox.add(lengthSelector);
+        headerBox.add(_lengthSelector);
         headerBox.add(Box.createHorizontalGlue());
         _mainPane.add(headerBox, BorderLayout.NORTH);
     }
@@ -705,6 +705,22 @@ public class Wordle extends JFrame
                     if (keyVal == KeyEvent.VK_ESCAPE) {
                         // Escape key pressed.  Clear words and reset focus.
                         clearWords();
+                        return;
+                    }
+                    
+                    if (keyVal == KeyEvent.VK_5) {
+                        // 5 key pressed.  Load 5 letter words.
+                        _lengthSelector.setSelectedIndex(WordLength.LETTERS5.ordinal());
+                        _wordLen = 5;
+                        wordSizeInit();
+                        return;
+                    }
+                                        
+                    if (keyVal == KeyEvent.VK_6) {
+                        // 6 key pressed.  Load 6 letter words.
+                        _lengthSelector.setSelectedIndex(WordLength.LETTERS6.ordinal());
+                        _wordLen = 6;
+                        wordSizeInit();
                         return;
                     }
                                         
