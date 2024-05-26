@@ -2,7 +2,9 @@ package com.dw.wordle;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Container;
+import java.awt.FocusTraversalPolicy;
 import java.awt.Font;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
@@ -83,7 +85,7 @@ public class Wordle extends JFrame
             }                
         }
     }
-
+    
     public static void main(String[] args) {
         new Wordle();
     }
@@ -113,7 +115,6 @@ public class Wordle extends JFrame
         buildHeader();
         buildWordPane();
         wordSizeInit();
-        //setSize(500,500);
         setVisible(true);
     }
     
@@ -133,10 +134,14 @@ public class Wordle extends JFrame
         for (int iWord=0; iWord<_nWords; iWord++) {
             _letters[iWord] = new LetterField[_wordLen];
         }
+
         buildBody();
         pack();
         findWords();
         fillWordTable();
+
+        // Set focus to first letter.  Disable focus traversal on last letter.
+        _letters[0][0].grabFocus();
     }
     
     protected List<String> loadWords(int wordLen) {
@@ -218,6 +223,7 @@ public class Wordle extends JFrame
                 String s = lengthSelector.getSelectedItem().toString();
                 _wordLen = WordLength.fromString(s).getInt();
                 wordSizeInit();
+                _letters[0][0].grabFocus();
             }
         });
         Box headerBox = Box.createHorizontalBox();
@@ -611,17 +617,65 @@ public class Wordle extends JFrame
                 add(Box.createHorizontalStrut(10));
             }
             add(Box.createHorizontalStrut(20));
+            this.setFocusTraversalPolicyProvider(true);
+            this.setFocusTraversalPolicy(new FocusTraversalPolicy() {
+
+                @Override
+                public Component getComponentAfter(Container aContainer,
+                        Component aComponent)
+                {
+                    LetterField lf = (LetterField)aComponent;
+                    int iw = lf.wordIndex;
+                    int ic = lf.charIndex;
+                    int nextic = ic+1;
+                    int nextiw = iw;
+                    if (nextic == wordLen) {nextic=0; nextiw=iw+1;}
+                    if (nextiw == _nWords) {nextic=ic; nextiw=iw;} 
+                    return _letters[nextiw][nextic];
+                }
+
+                @Override
+                public Component getComponentBefore(Container aContainer,
+                        Component aComponent)
+                {
+                    LetterField lf = (LetterField)aComponent;
+                    int iw = lf.wordIndex;
+                    int ic = lf.charIndex;
+                    int nextic = ic-1;
+                    int nextiw = iw;
+                    if (nextic<0) {nextic = wordLen-1; nextiw=iw-1;}
+                    if (nextiw<0) {nextic = 0; nextiw=0;}
+                    return _letters[nextiw][nextic];
+                }
+
+                @Override
+                public Component getFirstComponent(Container aContainer)
+                {
+                    return _letters[0][0];
+                }
+
+                @Override
+                public Component getLastComponent(Container aContainer)
+                {
+                    return _letters[_nWords-1][wordLen-1];
+                }
+
+                @Override
+                public Component getDefaultComponent(Container aContainer)
+                {
+                    return _letters[0][0];
+                }
+            
+            });
         }
     }
     
     class LetterField extends JTextField {
         private static final long serialVersionUID = 1L;
         public State state=State.GRAY;
-        int iWord;
-        int iChar;
-        char c;
-        int wordIndex;
-        int charIndex;
+        public char c;
+        public int wordIndex;
+        public int charIndex;
 
         public LetterField(int iw, int ic, String s) {
             super(s, 2);
@@ -653,7 +707,7 @@ public class Wordle extends JFrame
                         clearWords();
                         return;
                     }
-                    
+                                        
                     // Ignore anything non-alphabetic except space or slash.
                     if (!"abcdefghigjklmnopqrstuvwxyz /".contains(String.valueOf(keyVal))) {
                         keyVal = curVal;
@@ -693,21 +747,10 @@ public class Wordle extends JFrame
                     evt.setKeyChar(Character.toUpperCase(evt.getKeyChar()));
                     setText("");
 
-//                    Commented out because auto-advance interferes with "/" state entry
-//                    System.out.println("tabToNext = " + tabToNext);
-//                    if (tabToNext) {
-//                        int nextChar = (charIndex + 1) % wordLen;
-//                        int nextWord = wordIndex;
-//                        if (nextChar == 0) {
-//                            nextWord = (nextWord + 1) % nWords;
-//                        }
-//                        System.out.println("nextWord="+nextWord+", nextChar="+nextChar);
-//                        letters[nextWord][nextChar].grabFocus();
-//                    }
                 }
 
                 @Override
-                public void keyPressed(KeyEvent e)
+                public void keyPressed(KeyEvent evt)
                 {
                 }
 
