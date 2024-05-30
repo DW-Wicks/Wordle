@@ -699,6 +699,10 @@ public class Wordle extends JFrame
                     if (keyVal == '\n') {
                         // Enter key pressed.  Update matching words.
                         findWords();
+                        if (iw < _nWords-1 && ic== _wordLen-1) {
+                            // Move to start of next word if at end of word
+                            _letters[iw+1][0].requestFocus();
+                        }
                         return;
                     }
                     
