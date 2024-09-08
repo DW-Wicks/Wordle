@@ -141,7 +141,6 @@ public class Wordle extends JFrame
         try
         {
             String userHome = System.getProperty("user.home");
-            System.out.println("DEBUG: Got user home = " + userHome);
             File file = new File(userHome, "Wordle.ini");
             // Check if the file exists, if not, create it
             if (!file.exists()) {
@@ -152,7 +151,6 @@ public class Wordle extends JFrame
             String yStr = _ini.get("Window", "y");
             _x = (xStr!=null) ? Integer.valueOf(xStr) : 0;
             _y = (xStr!=null) ? Integer.valueOf(yStr) : 0;
-            System.out.println("DEBUG: Got x=" + _x +", y=" + _y);
         }
         catch (IOException e)
         {
