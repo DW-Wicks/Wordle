@@ -203,8 +203,14 @@ public class Wordle extends JFrame
     }
     
     protected Image getIcon() {
-        URL iconURL = getClass().getResource("/WordleIcon.png");
+        String iconFileName = "/WordleIcon.png";
+        URL iconURL = null;
+        for (String iconPath : new String[] {iconFileName, "src" + iconFileName}) {
+            iconURL = getClass().getResource(iconPath);
+            if (iconPath != null) break;
+        }
         Image icon = Toolkit.getDefaultToolkit().getImage(iconURL);
+        System.out.println("DEBUG: got icon: " + icon);
         return icon;
     }
     
@@ -221,8 +227,12 @@ public class Wordle extends JFrame
         int iTry = 0;
         int maxTries = 30;
         while (true) {
-            String wordPath = String.format("/WORDS/WORD%02d.TXT", wordLen);
-            InputStream input = getClass().getResourceAsStream(wordPath);
+            InputStream input = null;
+            String wordFileName = String.format("/WORDS/WORD%02d.TXT", wordLen);
+            for (String wordPath : new String[] {wordFileName, "/src" + wordFileName}) {
+                input = getClass().getResourceAsStream(wordPath);
+                if (input != null) break;
+            }
             BufferedReader wordReader = new BufferedReader(new InputStreamReader(input));
 
             try
