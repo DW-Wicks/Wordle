@@ -6,7 +6,10 @@ import java.awt.Component;
 import java.awt.Container;
 import java.awt.FocusTraversalPolicy;
 import java.awt.Font;
+import java.awt.Image;
 import java.awt.Insets;
+import java.awt.Point;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -16,8 +19,11 @@ import java.awt.event.MouseListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URL;
 import java.util.List;
 import java.util.LinkedList;
 
@@ -37,6 +43,8 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.border.Border;
 
+import org.ini4j.Ini;
+
 public class Wordle extends JFrame
 {
     // Class variables
@@ -51,6 +59,8 @@ public class Wordle extends JFrame
     Box             _buttonBox;
     JTable          _wordTable;
     JLabel          _wordCountLabel;
+    Ini             _ini;
+    int             _x, _y;
     
     // Class enums
     enum State {GRAY, YELLOW, GREEN}
@@ -88,17 +98,20 @@ public class Wordle extends JFrame
     }
     
     public static void main(String[] args) {
-        new Wordle();
+        new Wordle().run();
     }
     
     Wordle() {
         super("Wordle Helper");
+        this.loadIni();
+        this.setIconImage(getIcon());
 
         addWindowListener(new WindowAdapter()
         {
             @Override
             public void windowClosing(WindowEvent e)
             {
+                saveIni();
                 System.exit(0);
             }
         });
@@ -116,7 +129,53 @@ public class Wordle extends JFrame
         buildHeader();
         buildWordPane();
         wordSizeInit();
+        this.setLocation(_x, _y);
+    }
+    
+    protected void run() {
         setVisible(true);
+        saveIni();
+    }
+    
+    protected void loadIni() {
+        try
+        {
+            String userHome = System.getProperty("user.home");
+            System.out.println("DEBUG: Got user home = " + userHome);
+            File file = new File(userHome, "Wordle.ini");
+            // Check if the file exists, if not, create it
+            if (!file.exists()) {
+                file.createNewFile();
+            }
+            _ini = new Ini(file);
+            String xStr = _ini.get("Window", "x");
+            String yStr = _ini.get("Window", "y");
+            _x = (xStr!=null) ? Integer.valueOf(xStr) : 0;
+            _y = (xStr!=null) ? Integer.valueOf(yStr) : 0;
+            System.out.println("DEBUG: Got x=" + _x +", y=" + _y);
+        }
+        catch (IOException e)
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
+    
+    protected void saveIni() {
+        Point p  = this.getLocationOnScreen();
+        if (p.x != _x || p.y != _y) {
+            _ini.put("Window", "x", p.x);
+            _ini.put("Window", "y", p.y);
+            try
+            {
+                _ini.store();
+            }
+            catch (IOException e)
+            {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
     }
     
     protected void wordSizeInit() {
@@ -143,6 +202,12 @@ public class Wordle extends JFrame
 
         // Set focus to first letter.  Disable focus traversal on last letter.
         _letters[0][0].grabFocus();
+    }
+    
+    protected Image getIcon() {
+        URL iconURL = getClass().getResource("/WordleIcon.png");
+        Image icon = Toolkit.getDefaultToolkit().getImage(iconURL);
+        return icon;
     }
     
     protected List<String> loadWords(int wordLen) {
@@ -203,6 +268,7 @@ public class Wordle extends JFrame
             @Override
             public void actionPerformed(ActionEvent e)
             {
+                saveIni();
                 System.exit(0);
             }
         });
