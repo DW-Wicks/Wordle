@@ -210,7 +210,6 @@ public class Wordle extends JFrame
             if (iconPath != null) break;
         }
         Image icon = Toolkit.getDefaultToolkit().getImage(iconURL);
-        System.out.println("DEBUG: got icon: " + icon);
         return icon;
     }
     
